@@ -7,37 +7,87 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.7.0/nv.d3.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.7.0/nv.d3.css">
+    <style>
+body {
+    width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+svg {
+    border: 1px solid black;
+    width: 100%;
+    height: 400px;
+}
+    </style>
 </head>
 <body>
 
+<p>
+    It's April 7th and Sam from Sales is presenting the last three months worth
+    of data for one of the company's key metrics. &ldquo;So you can see a
+    definite upward trend, if we keep this up we should be on target to see
+    around 35 pronks this month, and nearly 40 next month!&rdquo;
+</p>
+
 <div id="monthly-chart"><svg></svg></div>
+
+<p>
+    Of course someone has to ask why April comes in under 10, and Sam is quick
+    with the answer: it's only April 7th today, that bar is showing incomplete
+    data.
+</p>
+
+<p>
+    But then Merry from Marketing asks if Sam could possibly show the data on
+    a day-by-day basis. Nothing easier:
+</p>
 
 <div id="daily-chart"><svg></svg></div>
 
+<p>
+    Oops. Where did that trend go?
+</p>
+
+<p>
+    If we go to more effort than Sam did, we'll find that the data actually
+    starts <em>exactly</em> three months ago: on the 7th of January. January's
+    bar, just like April's, is showing incomplete data. The rest of the
+    &ldquo;trend&rdquo; comes from February having only 28 days (in 2015) while
+    March has 31. The data in fact reflect an average of exactly one pronk per
+    day, with a small amount of noise added. (You can verify this with View
+    Source.) In April we can expect only 30 pronks, and 31 in May.
+</p>
+
+<p>
+    Of course Sam should adjust the chart to include the first days of January.
+    But we can do better than this: if we show the <em>daily average</em>
+    recorded over each month, instead of the total, then we eliminate the
+    influence of the different month lengths. And if Sam for some reason needs
+    to stick to that odd choice for the date range, well, that works too.
+</p>
+
+<div id="monthly-daily-chart"><svg></svg></div>
+
+<p>Lessons:</p>
+
+<ul>
+    <li>Beware incomplete data at <em>both</em> ends of a bar chart sampling
+        over a time range.</li>
+    <li>Months make bad sampling buckets, because they aren't all the same
+        length.</li>
+    <li>Dividing the value reported by the size of the sample bucket makes it
+        possible to compare buckets of different sizes.</li>
+</ul>
+
+<p>
+    We could even go further, and let the width of each bar indicate the size
+    of the sampling bucket. In that case the <em>total area</em> of a bar shows
+    the size of the sample. I don't show an example because this more complex
+    kind of chart is not supported by the charting library I'm using (nvd3)
+    and nobody knows how to read it anyway.
+</p>
+
 <script>
-nv.addGraph(function() {
-  var chart = nv.models.multiBarChart()
-      .x(function(d) { return d[0].getDate() + "/" + (d[0].getMonth() + 1) })    //Specify the data accessors.
-      .y(function(d) { return d[1] })
-      .staggerLabels(false)    //Too many bars and not enough room? Try staggering labels.
-      .tooltips(false)        //Don't show tooltips
-      .showControls(false)
-      .height(400)
-      .width(700)
-      ;
-  chart.yAxis.tickFormat(d3.format("d"));
-
-  d3.select('#daily-chart svg')
-      .datum([{key:"Daily pronks", values:data}])
-      .attr("width", 800)
-      .attr("height", 500)
-      .call(chart);
-
-  nv.utils.windowResize(chart.update);
-
-  return chart;
-});
-
 function aggregate_months(data) {
     var monthly_data = [["January", 0], ["February", 0], ["March", 0], ["April", 0]];
     _.each(data, function(datum) {
@@ -59,12 +109,10 @@ nv.addGraph(function() {
       .height(400)
       .width(700)
       ;
-  chart.yAxis.tickFormat(d3.format("d"));
+  chart.yAxis.tickValues([0,10,20,30,31]);
 
   d3.select('#monthly-chart svg')
       .datum([{key:"Monthly pronks", values:aggregate_months(data)}])
-      .attr("width", 800)
-      .attr("height", 500)
       .call(chart);
 
   nv.utils.windowResize(chart.update);
@@ -72,97 +120,171 @@ nv.addGraph(function() {
   return chart;
 });
 
+nv.addGraph(function() {
+  var chart = nv.models.multiBarChart()
+      .x(function(d) { return d[0].getDate() + "/" + (d[0].getMonth() + 1) })    //Specify the data accessors.
+      .y(function(d) { return d[1] })
+      .staggerLabels(false)    //Too many bars and not enough room? Try staggering labels.
+      .tooltips(false)        //Don't show tooltips
+      .showControls(false)
+      .height(400)
+      .width(700)
+      ;
+  chart.yAxis.tickValues([0,1]);
+
+  d3.select('#daily-chart svg')
+      .datum([{key:"Daily pronks", values:data}])
+      .call(chart);
+
+  nv.utils.windowResize(chart.update);
+
+  return chart;
+});
+
+function aggregate_properly_months(data) {
+    var data_by_month = [
+        {m:"January", days:0, pronks:0, min_day:31, max_day:0},
+        {m:"February", days:0, pronks:0, min_day:28, max_day:0},
+        {m:"March", days:0, pronks:0, min_day:31, max_day:0},
+        {m:"April", days:0, pronks:0, min_day:30, max_day:0}];
+    _.each(data, function(datum) {
+        var date = datum[0];
+        var count = datum[1];
+        var month = date.getMonth();
+        var day = date.getDate();
+        month_data = data_by_month[month];
+        month_data["days"]++;
+        month_data["pronks"] += count;
+        if (day < month_data.min_day) {
+            month_data.min_day = day;
+        }
+        if (day > month_data.max_day) {
+            month_data.max_day = day;
+        }
+    });
+    return data_by_month;
+}
+
+nv.addGraph(function() {
+  var chart = nv.models.multiBarChart()
+      .x(function(d) {
+        return d.min_day + "-" + d.max_day + " " + d.m;
+       })
+      .y(function(d) {
+        return d.pronks / d.days
+       })
+      .staggerLabels(false)    //Too many bars and not enough room? Try staggering labels.
+      .tooltips(false)        //Don't show tooltips
+      .showControls(false)
+      .height(400)
+      .width(700)
+      ;
+  chart.yAxis.tickValues([0, 1]);
+
+  d3.select('#monthly-daily-chart svg')
+      .datum([{key:"Average daily pronks by month", values:aggregate_properly_months(data)}])
+      .call(chart);
+
+  nv.utils.windowResize(chart.update);
+
+  return chart;
+});
+
+function epsilon() {
+    return Math.random() * 0.05 - 0.025;
+}
+
 var data = [
-  [new Date(2015, 0, 7), 1],
-  [new Date(2015, 0, 8), 1],
-  [new Date(2015, 0, 9), 1],
-  [new Date(2015, 0, 10), 1],
-  [new Date(2015, 0, 11), 1],
-  [new Date(2015, 0, 12), 1],
-  [new Date(2015, 0, 13), 1],
-  [new Date(2015, 0, 14), 1],
-  [new Date(2015, 0, 15), 1],
-  [new Date(2015, 0, 16), 1],
-  [new Date(2015, 0, 17), 1],
-  [new Date(2015, 0, 18), 1],
-  [new Date(2015, 0, 19), 1],
-  [new Date(2015, 0, 20), 1],
-  [new Date(2015, 0, 21), 1],
-  [new Date(2015, 0, 22), 1],
-  [new Date(2015, 0, 23), 1],
-  [new Date(2015, 0, 24), 1],
-  [new Date(2015, 0, 25), 1],
-  [new Date(2015, 0, 26), 1],
-  [new Date(2015, 0, 27), 1],
-  [new Date(2015, 0, 28), 1],
-  [new Date(2015, 0, 29), 1],
-  [new Date(2015, 0, 30), 1],
-  [new Date(2015, 0, 31), 1],
-  [new Date(2015, 1, 1), 1],
-  [new Date(2015, 1, 2), 1],
-  [new Date(2015, 1, 3), 1],
-  [new Date(2015, 1, 4), 1],
-  [new Date(2015, 1, 5), 1],
-  [new Date(2015, 1, 6), 1],
-  [new Date(2015, 1, 7), 1],
-  [new Date(2015, 1, 8), 1],
-  [new Date(2015, 1, 9), 1],
-  [new Date(2015, 1, 10), 1],
-  [new Date(2015, 1, 11), 1],
-  [new Date(2015, 1, 12), 1],
-  [new Date(2015, 1, 13), 1],
-  [new Date(2015, 1, 14), 1],
-  [new Date(2015, 1, 15), 1],
-  [new Date(2015, 1, 16), 1],
-  [new Date(2015, 1, 17), 1],
-  [new Date(2015, 1, 18), 1],
-  [new Date(2015, 1, 19), 1],
-  [new Date(2015, 1, 20), 1],
-  [new Date(2015, 1, 21), 1],
-  [new Date(2015, 1, 22), 1],
-  [new Date(2015, 1, 23), 1],
-  [new Date(2015, 1, 24), 1],
-  [new Date(2015, 1, 25), 1],
-  [new Date(2015, 1, 26), 1],
-  [new Date(2015, 1, 27), 1],
-  [new Date(2015, 1, 28), 1],
-  [new Date(2015, 2, 1), 1],
-  [new Date(2015, 2, 2), 1],
-  [new Date(2015, 2, 3), 1],
-  [new Date(2015, 2, 4), 1],
-  [new Date(2015, 2, 5), 1],
-  [new Date(2015, 2, 6), 1],
-  [new Date(2015, 2, 7), 1],
-  [new Date(2015, 2, 8), 1],
-  [new Date(2015, 2, 9), 1],
-  [new Date(2015, 2, 10), 1],
-  [new Date(2015, 2, 11), 1],
-  [new Date(2015, 2, 12), 1],
-  [new Date(2015, 2, 13), 1],
-  [new Date(2015, 2, 14), 1],
-  [new Date(2015, 2, 15), 1],
-  [new Date(2015, 2, 16), 1],
-  [new Date(2015, 2, 17), 1],
-  [new Date(2015, 2, 18), 1],
-  [new Date(2015, 2, 19), 1],
-  [new Date(2015, 2, 20), 1],
-  [new Date(2015, 2, 21), 1],
-  [new Date(2015, 2, 22), 1],
-  [new Date(2015, 2, 23), 1],
-  [new Date(2015, 2, 24), 1],
-  [new Date(2015, 2, 25), 1],
-  [new Date(2015, 2, 26), 1],
-  [new Date(2015, 2, 27), 1],
-  [new Date(2015, 2, 28), 1],
-  [new Date(2015, 2, 29), 1],
-  [new Date(2015, 2, 30), 1],
-  [new Date(2015, 2, 31), 1],
-  [new Date(2015, 3, 1), 1],
-  [new Date(2015, 3, 2), 1],
-  [new Date(2015, 3, 3), 1],
-  [new Date(2015, 3, 4), 1],
-  [new Date(2015, 3, 5), 1],
-  [new Date(2015, 3, 6), 1],
+  [new Date(2015, 0, 7), 1 + epsilon()],
+  [new Date(2015, 0, 8), 1 + epsilon()],
+  [new Date(2015, 0, 9), 1 + epsilon()],
+  [new Date(2015, 0, 10), 1 + epsilon()],
+  [new Date(2015, 0, 11), 1 + epsilon()],
+  [new Date(2015, 0, 12), 1 + epsilon()],
+  [new Date(2015, 0, 13), 1 + epsilon()],
+  [new Date(2015, 0, 14), 1 + epsilon()],
+  [new Date(2015, 0, 15), 1 + epsilon()],
+  [new Date(2015, 0, 16), 1 + epsilon()],
+  [new Date(2015, 0, 17), 1 + epsilon()],
+  [new Date(2015, 0, 18), 1 + epsilon()],
+  [new Date(2015, 0, 19), 1 + epsilon()],
+  [new Date(2015, 0, 20), 1 + epsilon()],
+  [new Date(2015, 0, 21), 1 + epsilon()],
+  [new Date(2015, 0, 22), 1 + epsilon()],
+  [new Date(2015, 0, 23), 1 + epsilon()],
+  [new Date(2015, 0, 24), 1 + epsilon()],
+  [new Date(2015, 0, 25), 1 + epsilon()],
+  [new Date(2015, 0, 26), 1 + epsilon()],
+  [new Date(2015, 0, 27), 1 + epsilon()],
+  [new Date(2015, 0, 28), 1 + epsilon()],
+  [new Date(2015, 0, 29), 1 + epsilon()],
+  [new Date(2015, 0, 30), 1 + epsilon()],
+  [new Date(2015, 0, 31), 1 + epsilon()],
+  [new Date(2015, 1, 1), 1 + epsilon()],
+  [new Date(2015, 1, 2), 1 + epsilon()],
+  [new Date(2015, 1, 3), 1 + epsilon()],
+  [new Date(2015, 1, 4), 1 + epsilon()],
+  [new Date(2015, 1, 5), 1 + epsilon()],
+  [new Date(2015, 1, 6), 1 + epsilon()],
+  [new Date(2015, 1, 7), 1 + epsilon()],
+  [new Date(2015, 1, 8), 1 + epsilon()],
+  [new Date(2015, 1, 9), 1 + epsilon()],
+  [new Date(2015, 1, 10), 1 + epsilon()],
+  [new Date(2015, 1, 11), 1 + epsilon()],
+  [new Date(2015, 1, 12), 1 + epsilon()],
+  [new Date(2015, 1, 13), 1 + epsilon()],
+  [new Date(2015, 1, 14), 1 + epsilon()],
+  [new Date(2015, 1, 15), 1 + epsilon()],
+  [new Date(2015, 1, 16), 1 + epsilon()],
+  [new Date(2015, 1, 17), 1 + epsilon()],
+  [new Date(2015, 1, 18), 1 + epsilon()],
+  [new Date(2015, 1, 19), 1 + epsilon()],
+  [new Date(2015, 1, 20), 1 + epsilon()],
+  [new Date(2015, 1, 21), 1 + epsilon()],
+  [new Date(2015, 1, 22), 1 + epsilon()],
+  [new Date(2015, 1, 23), 1 + epsilon()],
+  [new Date(2015, 1, 24), 1 + epsilon()],
+  [new Date(2015, 1, 25), 1 + epsilon()],
+  [new Date(2015, 1, 26), 1 + epsilon()],
+  [new Date(2015, 1, 27), 1 + epsilon()],
+  [new Date(2015, 1, 28), 1 + epsilon()],
+  [new Date(2015, 2, 1), 1 + epsilon()],
+  [new Date(2015, 2, 2), 1 + epsilon()],
+  [new Date(2015, 2, 3), 1 + epsilon()],
+  [new Date(2015, 2, 4), 1 + epsilon()],
+  [new Date(2015, 2, 5), 1 + epsilon()],
+  [new Date(2015, 2, 6), 1 + epsilon()],
+  [new Date(2015, 2, 7), 1 + epsilon()],
+  [new Date(2015, 2, 8), 1 + epsilon()],
+  [new Date(2015, 2, 9), 1 + epsilon()],
+  [new Date(2015, 2, 10), 1 + epsilon()],
+  [new Date(2015, 2, 11), 1 + epsilon()],
+  [new Date(2015, 2, 12), 1 + epsilon()],
+  [new Date(2015, 2, 13), 1 + epsilon()],
+  [new Date(2015, 2, 14), 1 + epsilon()],
+  [new Date(2015, 2, 15), 1 + epsilon()],
+  [new Date(2015, 2, 16), 1 + epsilon()],
+  [new Date(2015, 2, 17), 1 + epsilon()],
+  [new Date(2015, 2, 18), 1 + epsilon()],
+  [new Date(2015, 2, 19), 1 + epsilon()],
+  [new Date(2015, 2, 20), 1 + epsilon()],
+  [new Date(2015, 2, 21), 1 + epsilon()],
+  [new Date(2015, 2, 22), 1 + epsilon()],
+  [new Date(2015, 2, 23), 1 + epsilon()],
+  [new Date(2015, 2, 24), 1 + epsilon()],
+  [new Date(2015, 2, 25), 1 + epsilon()],
+  [new Date(2015, 2, 26), 1 + epsilon()],
+  [new Date(2015, 2, 27), 1 + epsilon()],
+  [new Date(2015, 2, 28), 1 + epsilon()],
+  [new Date(2015, 2, 29), 1 + epsilon()],
+  [new Date(2015, 2, 30), 1 + epsilon()],
+  [new Date(2015, 2, 31), 1 + epsilon()],
+  [new Date(2015, 3, 1), 1 + epsilon()],
+  [new Date(2015, 3, 2), 1 + epsilon()],
+  [new Date(2015, 3, 3), 1 + epsilon()],
+  [new Date(2015, 3, 4), 1 + epsilon()],
+  [new Date(2015, 3, 5), 1 + epsilon()],
+  [new Date(2015, 3, 6), 1 + epsilon()],
 ];
 
 </script>
