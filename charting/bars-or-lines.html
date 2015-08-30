@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Choosing bar or line charts</title>
+    <script type="text/javascript" src="resources/d3/3.5.5/d3.min.js"></script>
+    <script type="text/javascript" src="resources/underscore/1.8.2/underscore-min.js"></script>
+    <link rel="stylesheet" href="/resources/tufte.css">
+    <style>
+.chart {
+    border: 1px solid black;
+    width: 50%;
+    height: 200px;
+}
+svg {
+    width: 100%;
+    height: 100%;
+}
+.axis {
+    fill: none;
+}
+.axis path, .axis line {
+    shape-rendering: crispEdges;
+    stroke: #000;
+    stroke-width: 1;
+}
+.axis text {
+    opacity: 1;
+    fill: #000;
+}
+.line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+}
+circle {
+    stroke: #000;
+    fill: steelblue;
+}
+rect {
+    stroke: #eee;
+    fill: steelblue;
+}
+    </style>
+</head>
+<body>
+
+<script>
+var data = [[12, 1], [13, 0], [14, 4], [15, 2], [17, 3]];
+</script>
+
+<h1>Choosing between bar and line charts</h1>
+
+<p>
+Say you've got some time-series data to display. &ldquo;Time-series data,&rdquo; you think, &ldquo;that sounds like a line chart.&rdquo; Hold your
+horses, not so fast. This is a common mistake, which produces charts such as this one:<label
+        for="health-app-complaints" class="margin-toggle sidenote-number"></label><input
+        type="checkbox" id="health-app-complaints" class="margin-toggle"/><span class="sidenote">There are many other complaints I could make about
+    this chart. Why does the series line change between dashed and solid? Why the shading under it (which also changes)? What is the value at the
+    horizontal dotted line, and what does it indicate? And what actually are the values at the data points? It's a pretty good example of how
+    <em>not</em> to visualise simple data, actually.</span>
+<img src="apple-health-stairs-chart.png"
+     alt="Screenshot from the iOS Health app: a line chart showing Flights of Stairs Climbed during one full day."
+     title="The iOS Health app: not an example of charting best practises"
+        >
+This chart, from the iOS Health app, is trying to show how many flights of stairs I climbed over the course of a single day. From the chart, what
+do you think happened about 1pm? Between 1:00 and 2:00? Between 2:00 and 3:00?
+</p>
+
+<p>
+Data visualisation is fundamentally about <em>communication</em>. The most basic message communicated by a line chart is: &ldquo;It makes sense to
+talk about values <em>between</em> the data points we have, and linear interpolation is a reasonable proxy for the data we don't have.&rdquo; There
+are plenty of data sets where this assumption actually holds. The Health app also lets you record height and weight measurements, and
+displays these on a line chart. Suppose I measured my weight at 89kg a week ago, and 87 today. Does it make sense to talk about the values (that I
+didn't measure) in between these two data points? It does! And is linear interpolation a reasonable proxy for those values? It sure is!<label
+        for="linear-interpolation" class="margin-toggle sidenote-number"></label><input
+        type="checkbox" id="linear-interpolation" class="margin-toggle"/><span class="sidenote">I should be more careful here: what is
+    &ldquo;reasonable&rdquo; depends on the communicative goals of the visualisation. If we're interested in daily weight cycles, linear
+    interpolation across a week is not going to communicate this clearly. In the case of weights it's not inherently <em>un</em>reasonable, though,
+    whereas (as we will see below) it's not at all a good fit for stair-climbing.</span>
+</p>
+
+<p>
+Does it make sense to talk about the values in between the data points in the chart above? For the sake of the argument, let's redraw the chart
+above with simpler numbers and less distracting visual noise. The real numbers aren't very convenient for the points I want to make below, though,
+so I've massaged them a bit to highlight some interesting cases.
+</p>
+
+<div class="chart" id="stairs-line-bad"></div>
+
+<script>
+var margin = {top: 30, right: 30, bottom: 30, left: 30}
+        , width = parseInt(d3.select('#stairs-line-bad').style('width'), 10)
+        , width = width - margin.left - margin.right
+        , height = parseInt(d3.select('#stairs-line-bad').style('height'), 10)
+        , height = height - margin.top - margin.bottom
+        , barHeight = 20
+        ;
+
+var x = d3.scale.linear().domain([10, 18]).range([0, width]);
+var y = d3.scale.linear().domain([0, 5]).range([height, 0]);
+
+var xAxis = d3.svg.axis().scale(x).orient('bottom').ticks(8).tickSize(8).tickFormat(function(d){return d + ':00';});
+var yAxis = d3.svg.axis().scale(y).orient('left').ticks(5);
+
+var svg = d3.select('#stairs-line-bad').append('svg')
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg.selectAll('.guide').data([2, 4]).enter().append('rect')
+        .attr('class', 'guide')
+        .attr('x', x(10))
+        .attr('y', y)
+        .attr('width', width)
+        .attr('height', 1);
+
+svg.append('g').classed('axis', true).attr('transform', 'translate(0.5,0.5), translate(0,' + height + ')').call(xAxis)
+        .append('text').attr('y', '0.71em').attr('dy', -height).attr('dx', '.2em').text('stairs climbed');
+svg.append('g').classed('axis', true).attr('transform', 'translate(0.5,0.5)').call(yAxis)
+        .append('text').attr('x', width).attr('y', height).attr('dy', '-.2em').style("text-anchor", "end").text('time');
+
+var line = d3.svg.line()
+        .x(function(d) { return x(d[0]); })
+        .y(function(d) { return y(d[1]); });
+
+svg.append('path')
+        .datum(data)
+        .attr('class', 'line')
+        .attr('d', line);
+
+svg.selectAll('circle').data(data).enter().append('circle')
+        .attr('cx', function(d){ return x(d[0]); })
+        .attr('cy', function(d){ return y(d[1]); })
+        .attr('r', 3)
+;
+
+</script>
+
+<p>
+This simplified version of the chart indicates me climbing four flights of stairs at 2pm and two at 3pm. (So that's six flights in total: enough to
+get the heart-rate up.) Does it make sense to ask what happened in between? At 2:30, say? The chart would seem to indicate that I climbed three
+flights at 2:30. (So not six but <em>nine</em> flights in total: even better for my general fitness!) And at 2:15 the chart says three and a half,
+while at 2:45 it reads two and a half: my total somehow went up to fourteen flights. Something is definitely wrong here.
+</p>
+
+<p>
+The problem is that &ldquo;flights of stairs climbed&rdquo; is not measuring some intrinsic quantity (like temperature), it's counting events that
+occur over a period of time. Misreading the chart as I did above amounts to adding the same events more than once to the total count. This shows
+another, more subtle, message communicated by a line chart: &ldquo;The measurements can be considered to be instantaneous at the scale the chart
+displays.&rdquo;<label
+        for="instantaneous" class="margin-toggle sidenote-number"></label><input
+        type="checkbox" id="instantaneous" class="margin-toggle"/><span class="sidenote">No measurement is <em>truly</em> instantaneous, of course,
+    but what matters is that it may be treated as such: either the time it takes is very small compared to the scale of the chart, or the
+    measurement does not depend on the length of time it takes and can be considered to be &lsquo;anchored&rsquo; to a single representative
+    instant.</span> But I don't really climb four flights of stairs <em>at 2pm</em>, I climb them <em>over a ten-minute period from 2.03 to
+    2.13</em>. And this is why it's <em>not</em> possible to ask, &ldquo;What would the measurement be at 2.30?&rdquo; (It's meaningful to
+ask, &ldquo;How many stairs would we count between 2.15 and 2.30?&rdquo; but the chart doesn't give you any way to answer the question.) For the
+same reason, it's <em>not</em> reasonable to use linear interpolation to guess the missing measurements between the two data points we have.
+</p>
+
+<p>
+The basic rule of thumb here is: if you want to show how often something happens, use a bar chart. That's because <em>how long you count for</em>
+has an obvious impact on how much you count! A bar chart encodes &ldquo;how long you count for&rdquo; in the width of the bars: a bar should span
+the period from when you started counting to when you stopped. For the sake of the exposition here I'm assuming those counts were across an entire
+    hour; if you look closely at the original Health app chart you'll see that's probably false, but it's not clear what logic they're using to produce
+their points.
+</p>
+
+<div class="chart" id="stairs-bar"></div>
+
+<script>
+var margin = {top: 30, right: 30, bottom: 30, left: 30}
+        , width = parseInt(d3.select('#stairs-bar').style('width'), 10)
+        , width = width - margin.left - margin.right
+        , height = parseInt(d3.select('#stairs-bar').style('height'), 10)
+        , height = height - margin.top - margin.bottom
+        , barHeight = 20
+        ;
+var svg = d3.select('#stairs-bar').append('svg')
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg.selectAll('.guide').data([2, 4]).enter().append('rect')
+        .attr('class', 'guide')
+        .attr('x', x(10))
+        .attr('y', y)
+        .attr('width', width)
+        .attr('height', 1);
+
+var x = d3.scale.linear().domain([10, 18]).range([0, width]);
+var y = d3.scale.linear().domain([0, 5]).range([height, 0]);
+
+var xAxis = d3.svg.axis().scale(x).orient('bottom').ticks(8).tickSize(8).tickFormat(function(d){return d + ':00';});
+var yAxis = d3.svg.axis().scale(y).orient('left').ticks(5);
+
+svg.append('g').classed('axis', true).attr('transform', 'translate(0.5,0.5), translate(0,' + height + ')').call(xAxis)
+        .append('text').attr('y', '0.71em').attr('dy', -height).attr('dx', '.2em').text('stairs climbed');
+svg.append('g').classed('axis', true).attr('transform', 'translate(0.5,0.5)').call(yAxis)
+        .append('text').attr('x', width).attr('y', height).attr('dy', '-.2em').style("text-anchor", "end").text('time');
+
+svg.selectAll('rect.bar').data(data).enter().append('rect').classed('bar', true)
+        .attr('x', function(d){ return x(d[0] - 1); })
+        .attr('y', function(d){ return y(d[1]);})
+        .attr('height', function(d){ return height - y(d[1]); })
+        .attr('width', x(11) - x(10))
+        .attr('r', 3)
+;
+
+</script>
+
+<p>
+But there's another problem that comes up once you do that: it's difficult, with a bar chart, to show the difference between &ldquo;I counted no
+events&rdquo; (the phone didn't go up any stairs) and &ldquo;I wasn't counting&rdquo; (the phone was off). A line chart shows a measurement of zero
+with a point at zero (joined by incoming and outgoing lines), and a missing measurement by no point (so the line between the surrounding two data
+points shows what linear interpolation would predict for the missing measurement). A bar chart confuses the two by simply not showing a bar in both
+cases.<label
+        for="missing-data" class="margin-toggle sidenote-number"></label><input
+        type="checkbox" id="missing-data" class="margin-toggle"/><span class="sidenote">I suspect this is why the Health app uses a line chart
+    here. It's designed as a general framework that any app can provide data for, so from inside the charting engine it simply can't tell if
+    &ldquo;no data&rdquo; is a zero measurement or no measurement at all. In this case Apple could have used its knowledge of the data source
+    (which is built in to the OS) to apply a more reasonable visualisation, but there are certainly other charts within the Health app where
+    this is not possible for them.</span> (As an aside, Apple fails to make this distinction in the data they record: there are no zero
+measurements and also no indications of when the device was <em>not</em> recording. You can't visualise data you don't have!)
+</p>
+
+<p>
+So here is the dilemma if you have data that came from counting, but you weren't counting all the time: you have gaps which you want to indicate
+with a line chart, but counts which need a bar chart. A typical solution is to convert your data from <em>counts</em> to <em>rates</em>
+(count/time). A rate is an instantaneous measurement (it makes sense to ask my stair-climbing rate <em>at 2:30</em>) and linear interpolation will
+often be reasonable for rates when it is not for the underlying counts. To convert a bar chart showing counts into a line chart showing rates, we
+simply give each bar that indicates a measurement (including zeros, but <em>not</em> including missing data) a point, and join them into a line; the
+units of the <i>y</i> axis must change, of course, and we might adjust the <i>x</i> axis a little, depending on where we decide to
+&lsquo;anchor&rsquo; our rate measurements in the count samples they come from.<label
+        for="anchoring" class="margin-toggle sidenote-number"></label><input
+        type="checkbox" id="anchoring" class="margin-toggle"/><span class="sidenote">The most principled option is to mark the rate at the
+    center of the sample period; this gives the linear interpolation its best interpretation. However if the samples are over &lsquo;natural&rsquo;
+    intervals (e.g., full hours) this will place the <i>x</i> values somewhat oddly (e.g., at the half-hours), potentially making the chart harder to
+    read. Here I have &lsquo;solved&rdquo; this problem by adding additional guide lines; it's very likely possible to do better than this.</span>
+</p>
+
+<div class="chart" id="stairs-bar-line"></div>
+
+<script>
+var margin = {top: 30, right: 30, bottom: 30, left: 30, mid: 50}
+        , width = parseInt(d3.select('#stairs-bar-line').style('width')) - margin.left - margin.mid - margin.right
+        , width = width / 2
+        , height = parseInt(d3.select('#stairs-bar-line').style('height'), 10)
+        , height = height - margin.top - margin.bottom
+        , barHeight = 20
+        ;
+var svg_bar = d3.select('#stairs-bar-line').append('svg').append('g')
+        .attr("width", width + margin.left)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg_bar.selectAll('.guide').data([2, 4]).enter().append('rect')
+        .attr('class', 'guide')
+        .attr('x', x(10))
+        .attr('y', y)
+        .attr('width', width)
+        .attr('height', 1);
+
+var x = d3.scale.linear().domain([10, 18]).range([0, width]);
+var y = d3.scale.linear().domain([0, 5]).range([height, 0]);
+
+var xAxis = d3.svg.axis().scale(x).orient('bottom').ticks(4).tickSize(8).tickFormat(function(d){return d + ':00';});
+var yAxis = d3.svg.axis().scale(y).orient('left').ticks(5);
+
+svg_bar.append('g').classed('axis', true).attr('transform', 'translate(0.5,0.5), translate(0,' + height + ')').call(xAxis)
+        .append('text').attr('y', '0.71em').attr('dy', -height).attr('dx', '.2em').text('stairs climbed');
+svg_bar.append('g').classed('axis', true).attr('transform', 'translate(0.5,0.5)').call(yAxis)
+        .append('text').attr('x', width).attr('y', height).attr('dy', '-.2em').style("text-anchor", "end").text('time');
+
+svg_bar.selectAll('rect.bar').data(data).enter().append('rect').classed('bar', true)
+        .attr('x', function(d){ return x(d[0] - 1); })
+        .attr('y', function(d){ return y(d[1]);})
+        .attr('height', function(d){ return height - y(d[1]); })
+        .attr('width', x(11) - x(10))
+        .attr('r', 3)
+;
+
+var svg_line = d3.select('#stairs-bar-line svg').append('g')
+        .attr("width", width + margin.mid + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + (+margin.left + width + margin.mid) + "," + margin.top + ")");
+
+svg_line.selectAll('.guide.x').data([2, 4]).enter().append('rect')
+        .classed('guide', true)
+        .classed('x', true)
+        .attr('x', x(10))
+        .attr('y', y)
+        .attr('width', width)
+        .attr('height', 1);
+
+svg_line.selectAll('.guide.y').data([11, 12, 13, 14, 15, 16, 17]).enter().append('rect')
+        .classed('guide', true)
+        .classed('y', true)
+        .attr('x', x)
+        .attr('y', 0)
+        .attr('width', 1)
+        .attr('height', height);
+
+var xAxis_line = d3.svg.axis().scale(x).orient('bottom').ticks(4).tickSize(8).tickFormat(function(d){return d + ':00';});
+var yAxis_line = d3.svg.axis().scale(y).orient('left').ticks(5);
+
+var line = d3.svg.line()
+        .x(function(d) { return x(d[0] - 0.5); })
+        .y(function(d) { return y(d[1]); });
+
+svg_line.append('g').classed('axis', true).attr('transform', 'translate(0.5,0.5), translate(0,' + height + ')').call(xAxis_line)
+        .append('text').attr('y', '0.71em').attr('dy', -height).attr('dx', '.2em').text('stairs/hr');
+svg_line.append('g').classed('axis', true).attr('transform', 'translate(0.5,0.5)').call(yAxis_line)
+        .append('text').attr('x', width).attr('y', height).attr('dy', '-.2em').style("text-anchor", "end").text('time');
+
+svg_line.append('path')
+        .datum(data)
+        .attr('class', 'line')
+        .attr('d', line);
+
+svg_line.selectAll('circle').data(data).enter().append('circle')
+        .attr('cx', function(d){ return x(d[0] - 0.5); })
+        .attr('cy', function(d){ return y(d[1]); })
+        .attr('r', 3)
+;
+</script>
+
+<p>
+In this chart (shown on the right above) we can again ask what the interpolated value would be between two data points. Because the data points have
+moved to the half-hours, the new question is, &ldquo;What is our guess for the value at 2pm (between the measured data points at 13:30 and
+14:30)?&rdquo; We can read this off from the chart (it's 3), but does it make any more sense than in the Health app version? Because of the
+relabeled <i>y</i> axis, it does! The question we are asking is no longer &ldquo;How many stairs did I climb?&rdquo; but &ldquo;How fast was I
+climbing stairs?&rdquo; My estimated stair-climbing rate at 2pm was 3 flights per hour, which is a perfectly good instantaneous stair-climbing
+rate; linear interpolation is a reasonable estimate here on the assumption that my stairs I climbed were evenly distributed throughout the hours
+before and after. (This assumption is very probably false, since stair-climbing is typically &lsquo;bursty&rsquo; rather than smooth on a timescale
+of hours, but we don't have anything better given the choice of whole hours for our sample buckets.)
+</p>
+
+<p>
+We can distill the above into some rules of thumb for deciding between line and bar charts for time-series data. Note that these are guidelines,
+not hard and fast rules: you still need to apply good judgement in deciding whether they will help you achieve your communicative goals.
+</p>
+
+<ol>
+    <li>If you are counting the number of times something happens over a period of time: prefer a bar chart to a line chart.</li>
+    <li>If you chose a bar chart using the previous rule of thumb, but your data collection has gaps that could be confused with legitimate zero
+        values: consider converting your measurements to <em>rates</em> (of the events you were counting) and using a line chart.</li>
+    <li>On the other hand, if you're taking (notionally) instantaneous measurements of some quantity, a line chart might be appropriate. Ask yourself:
+        does it make sense to talk about the values in between the measurements I took? And is linear interpolation a good proxy for those values?
+        Only if both answers are yes is the line chart clearly appropriate.</li>
+</ol>
+
+</body>
+</html>
