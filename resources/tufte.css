@@ -131,8 +131,6 @@ blockquote p { font-size: 1.1rem;
 blockquote footer { width: 50%;
                     text-align: right; }
 
-// ul { list-style-type: none; }
-
 li { padding: 0.5rem 0; }
 
 figure { max-width: 55%;
