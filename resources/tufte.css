@@ -255,3 +255,14 @@ label.margin-toggle:not(.sidenote-number) { display: none; }
                                             position: relative; }
                            table, table.booktabs { width: 85%; }
                            img { width: 100%; } }
+
+nav li {
+    font-size: 1rem;
+    list-style: none;
+    display: inline;
+    margin-left: 1em;
+}
+
+nav+h1 {
+    margin-top: 0;
+}

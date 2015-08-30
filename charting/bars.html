@@ -3,8 +3,8 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title></title>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
+    <script type="text/javascript" src="resources/d3/3.5.5/d3.min.js"></script>
+    <script type="text/javascript" src="resources/underscore/1.8.2/underscore-min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.7.0/nv.d3.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.7.0/nv.d3.css">
     <link rel="stylesheet" href="/resources/tufte.css">
@@ -17,6 +17,13 @@ svg {
     </style>
 </head>
 <body>
+
+<nav>
+    <ul>
+        <li><a href="/">More of Tikitu's stuff</a></li>
+        <li><a href="bars-or-lines.html">Choosing between bar and line charts for time-series data</a> « Charting</li>
+    </ul>
+</nav>
 
 <h1>Bar chart pitfalls: monthly buckets</h1>
 
@@ -61,7 +68,12 @@ svg {
     But we can do better than this: if we show the <em>daily average</em>
     recorded over each month, instead of the total, then we eliminate the
     influence of the different month lengths. And if Sam for some reason needs
-    to stick to that odd choice for the date range, well, that works too.
+    to stick to that odd choice for the date range, well, that works too.<label
+            for="area-charts" class="margin-toggle sidenote-number"></label><input
+            type="checkbox" id="area-charts" class="margin-toggle"/><span class="sidenote">We could even go further, and let the width of
+        each bar indicate the size of the sampling bucket. In that case the <em>total area</em> of a bar shows the size of the sample. I don't show
+        an example because this more complex kind of chart is not supported by the charting library I'm using (nvd3) and nobody knows how to read
+        it anyway.</span>
 </p>
 
 <div id="monthly-daily-chart"><svg></svg></div>
@@ -76,14 +88,6 @@ svg {
     <li>Dividing the value reported by the size of the sample bucket makes it
         possible to compare buckets of different sizes.</li>
 </ul>
-
-<p>
-    We could even go further, and let the width of each bar indicate the size
-    of the sampling bucket. In that case the <em>total area</em> of a bar shows
-    the size of the sample. I don't show an example because this more complex
-    kind of chart is not supported by the charting library I'm using (nvd3)
-    and nobody knows how to read it anyway.
-</p>
 
 <script>
 function aggregate_months(data) {
@@ -283,6 +287,9 @@ var data = [
 ];
 
 </script>
+
+<footer><a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a><br />This work by <span xmlns:cc="http://creativecommons.org/ns#" property="cc:attributionName">Tikitu de Jager</span> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>. Charts constructed with <a
+        href="https://nvd3.org">nvd3</a>.</footer>
 
 </body>
 </html>

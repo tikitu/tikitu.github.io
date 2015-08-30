@@ -42,14 +42,21 @@ rect {
     fill: steelblue;
 }
     </style>
+
+    <script>
+    var data = [[12, 1], [13, 0], [14, 4], [15, 2], [17, 3]];
+    </script>
 </head>
 <body>
 
-<script>
-var data = [[12, 1], [13, 0], [14, 4], [15, 2], [17, 3]];
-</script>
+<nav>
+    <ul>
+        <li><a href="/">More of Tikitu's stuff</a></li>
+        <li>Charting » <a href="bars.html">Bar chart pitfalls: monthly buckets</a></li>
+    </ul>
+</nav>
 
-<h1>Choosing between bar and line charts</h1>
+<h1>Choosing between bar and line charts for time-series data</h1>
 
 <p>
 Say you've got some time-series data to display. &ldquo;Time-series data,&rdquo; you think, &ldquo;that sounds like a line chart.&rdquo; Hold your
@@ -355,5 +362,7 @@ not hard and fast rules: you still need to apply good judgement in deciding whet
         Only if both answers are yes is the line chart clearly appropriate.</li>
 </ol>
 
+<footer><a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a><br />This work by <span xmlns:cc="http://creativecommons.org/ns#" property="cc:attributionName">Tikitu de Jager</span> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
+    Charts constructed with <a href="http://d3.org">d3</a>.</footer>
 </body>
 </html>
