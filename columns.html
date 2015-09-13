@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tooling with muti-column layouts</title>
+<style>
+body {
+    width: 20em;
+}
+.left {
+    border: solid 1px black;
+    float: left;
+    width: 50%;
+}
+.right {
+    border: solid 1px black;
+    width: 50%;
+    margin-left: 50%;
+}
+
+.first {
+    background-color: aquamarine;
+}
+.second {
+    background-color: coral;
+}
+</style>
+</head>
+<body>
+
+<p>So the answer to your question was &ldquo;it depends&rdquo;. In
+particular, it depends what the logical relationship between the columns
+is: separate parallel narrative threads, or one thread to be read
+left-column-then-right-column. This becomes important when a page break
+appears inside the double-column section, which is gonna happen someday
+with an e-edition because you've got no control over the size of the
+device someone is reading on (hence no control over page sizes and page
+breaks).</p>
+
+<p>It's easy enough to make two <em>parallel</em> columns, following two
+different narrative threads.</p>
+
+<section class="left first">
+    <p>Here is one thread. It goes on and on and on and on. And on and on
+    and on.
+    </p>
+    <p>It contains two paragraphs, but eventually it stops.</p>
+</section>
+
+<section class="right second">
+    <p>Here is the other thread. It, too, goes on at some length: about the
+    same, not by chance.
+    </p>
+    <p>It, too, contains two paragraphs. And it, too, comes to an end.</p>
+</section>
+
+<p>This works, more or less, because I wrote the two columns to have
+roughly the same length. If this is what you're doing: no worries at all.</p>
+
+<p>This should also work fine with page breaks, I believe: you'll get
+something looking like the following (although of course I'm faking it
+here):</p>
+
+
+<section class="left first">
+    <p>Here is one thread. It goes on and on and on and on. And on and on
+    and on.
+    </p>
+</section>
+
+<section class="right second">
+    <p>Here is the other thread. It, too, goes on at some length: about the
+    same, not by chance.
+    </p>
+</section>
+
+<section class="left first">
+    <p>It contains two paragraphs, but eventually it stops.</p>
+</section>
+
+<section class="right second">
+    <p>It, too, contains two paragraphs. And it, too, comes to an end.</p>
+</section>
+
+<p>The page break needn't fall on a paragraph boundary either, that's just
+to make faking it easier for me.</p>
+
+<p>So that's the easy option. The tricky one looks like this:</p>
+
+<section class="left first">
+    <p>Here starts a narrative thread that should continue across
+    <em>both</em> columns. It goes on and on from left to
+    right,</p>
+</section>
+
+<section class="right second">
+    <p>continuing here where it left off
+    there. You get the general idea. Balanced text flowing across columns.</p>
+</section>
+
+<p>This is still roughly achievable if the entire chunk falls on the same
+page. The ways I know to do it involve running javascript, which is fine
+for a website but probably not ok for an ebook. But if you know the font
+measurements you can decide where to break the columns yourself; if you're
+wrong about the font measurements (e.g. if someone set a non-standard font
+on their ebook reader) the column ends will look a bit ragged but it's not
+a disaster.</p>
+
+<p>(If what you're setting happens to be structured like poetry, with
+fixed line-breaks, you've got no problems at all. Except if the viewing
+screen is so narrow that it has to wrap/break the lines you've got:
+in general something to beware of with multicolumn layouts, lots of people
+reading on phones these days.)</p>
+
+<p>The disaster comes if this gets a page-break intervening. Because you
+want to get this:</p>
+
+<section class="left first">
+    <p>Here starts a narrative thread that should continue</p>
+    </section>
+<section class="right first">
+    <p>
+    across <em>both</em> columns. It goes on and on from left to
+    right,</p>
+</section>
+
+<section class="left second">
+    <p>continuing here where it left off there. I guess you get the
+    </p>
+    </section>
+<section class="right second">
+    <p>general idea. Balanced text flowing across columns.</p>
+</section>
+
+<p>But what you'll actually get is this:</p>
+
+<section class="left first">
+    <p>Here starts a narrative thread that should continue</p>
+    </section>
+<section class="right second">
+    <p>continuing here where it left off
+    there. You get the general
+    </p>
+    </section>
+
+<section class="left first">
+    <p>across
+    <em>both</em> columns. It goes on and on from left to
+    right,</p>
+</section>
+<section class="right second">
+<p>idea. Balanced text flowing across columns.</p>
+</section>
+
+<p>You have to read to the bottom of the left column (which
+continues on the next page!) before starting on the right column.
+&ldquo;Suboptimal.&rdquo;
+</p>
+
+<p>
+I should stress, though, that this ain't my day job: folk who make ebooks must
+have <em>some</em> way to produce more complex layouts. It's just gonna be a
+whole lot harder than simply dropping the text into a standard template, which
+might mean it's not cost-effective for a publisher to even try.
+</p>
+
+</body>
+</html>
